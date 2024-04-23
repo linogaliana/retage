@@ -1,0 +1,28 @@
+Package: REtage
+Title: An R package for inheritance analysis
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Lino",
+           family = "Galiana",
+           role = c("aut", "cre"),
+           email = "lino.galiana@insee.fr")
+Description: This package proposes a series of tools for
+    analysis on inheritance data. It provides functions
+    to estimate models with discretized inheritance amounts.
+License: GPL (>= 3)
+Depends: R (>= 2.10)
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    data.table,
+    haven,
+    lest,
+    oglm,
+    oglmx,
+    Rcpp
+RoxygenNote: 7.2.1
+Suggests: 
+    testthat (>= 2.1.0),
+    MASS
+LinkingTo: 
+    Rcpp

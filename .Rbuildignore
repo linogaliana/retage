@@ -1,0 +1,7 @@
+^REtage\.Rproj$
+^\.Rproj\.user$
+^\.gitlab-ci\.yml$
+^data-raw$
+inst/*
+^inst$
+^LICENSE\.md$

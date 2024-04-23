@@ -1,0 +1,99 @@
+image: git-registry.stable.innovation.insee.eu/innovation/rstudio
+
+stages:
+  - build
+  - test
+  - deploy
+  - check
+
+before_script:
+   - echo " => mise a jour des modules"
+   - HTTPS_PROXY=http://proxy-rie.http.insee.fr:8080/ git submodule sync --recursive
+   - HTTPS_PROXY=http://proxy-rie.http.insee.fr:8080/ git submodule update --init --recursive
+
+
+variables:
+  GIT_SSL_NO_VERIFY: "1"
+  _R_CHECK_CRAN_INCOMING_: "FALSE"
+  _R_CHECK_CRAN_INCOMING_: "FALSE"
+  _R_CHECK_FORCE_SUGGESTS_: "FALSE"
+  _R_CHECK_CRAN_INCOMING_USE_ASPELL_: "TRUE"
+  R_LIBS_USER: "$CI_PROJECT_DIR/ci/lib"
+  CHECK_DIR: "$CI_PROJECT_DIR/ci/logs"
+  BUILD_LOGS_DIR: "$CI_PROJECT_DIR/ci/logs/$CI_PROJECT_NAME.Rcheck"
+  CODECOV_TOKEN: "c1101b3e-9bab-4c94-843c-2faa6b809598"
+  CXX1X: "g++"
+  CXX1XSTD: "-std=c++0x"
+  CFLAGS: "-Wall -pedantic -fdiagnostics-color=always"
+  CXXFLAGS: "-Wall -pedantic -fdiagnostics-color=always"
+  CXX11FLAGS: "-Wall -pedantic -fdiagnostics-color=always"
+
+
+
+before_script:
+  - Rscript -e "install.packages('RcppEigen')"
+  - Rscript -e "devtools::install_deps('.')"
+  - Rscript -e "pkgbuild::clean_dll('.')"
+
+
+building:
+  stage: build
+  script:
+    - r -e "devtools::build('.', vignettes = FALSE)"
+    - mv ../*.tar.gz .
+  artifacts:
+    paths:
+      - './*.tar.gz'
+
+# To have the coverage percentage appear as a gitlab badge follow these
+# instructions:
+# https://docs.gitlab.com/ee/user/project/pipelines/settings.html#test-coverage-parsing
+# The coverage parsing string is
+# Coverage: \d+\.\d+
+
+testing:
+    stage: test
+    allow_failure: true
+    when: on_success
+    only:
+        - master
+    script:
+        - Rscript -e 'install.packages("DT")'
+        - Rscript -e 'covr::gitlab(quiet = FALSE)'
+        - mv public/coverage.html public/index.html
+    artifacts:
+        paths:
+            - public
+
+# To produce a code coverage report as a GitLab page see
+# https://about.gitlab.com/2016/11/03/publish-code-coverage-report-with-gitlab-pages/
+
+pages:
+    stage: deploy
+    dependencies:
+        - testing
+    script:
+        - ls
+    artifacts:
+        paths:
+            - public
+        expire_in: 30 days
+    only:
+        - master
+
+
+checkerrors:
+  stage: check
+  script:
+    - r -e 'if (!identical(devtools::check(".", document = FALSE, args = "--no-tests")[["errors"]], character(0))) stop("Check with Errors")'
+
+checkwarnings:
+  stage: check
+  script:
+    - r -e 'if (!identical(devtools::check(".", document = FALSE, args = "--no-tests")[["warnings"]], character(0))) stop("Check with Warnings")'
+
+checknotes:
+  stage: check
+  script:
+#    - r -e 'if (!identical(devtools::check("./capitulation", document = FALSE, args = "--no-tests")[["notes"]], character(0))) stop("Check with Notes")'
+    - r -e 'devtools::check(".", document = FALSE, args = "--no-tests")'
